@@ -1,3 +1,5 @@
+//go:generate mapstructure-to-hcl2 -type Config,nicConfig,diskConfig
+
 package proxmox
 
 import (
@@ -22,12 +24,11 @@ type Config struct {
 	common.PackerConfig    `mapstructure:",squash"`
 	common.HTTPConfig      `mapstructure:",squash"`
 	bootcommand.BootConfig `mapstructure:",squash"`
-	RawBootKeyInterval     string              `mapstructure:"boot_key_interval"`
-	BootKeyInterval        time.Duration       ``
+	BootKeyInterval        time.Duration       `mapstructure:"boot_key_interval"`
 	Comm                   communicator.Config `mapstructure:",squash"`
 
 	ProxmoxURLRaw      string `mapstructure:"proxmox_url"`
-	ProxmoxURL         *url.URL
+	proxmoxURL         *url.URL
 	SkipCertValidation bool   `mapstructure:"insecure_skip_tls_verify"`
 	Username           string `mapstructure:"username"`
 	Password           string `mapstructure:"password"`
@@ -37,14 +38,16 @@ type Config struct {
 	VMName string `mapstructure:"vm_name"`
 	VMID   int    `mapstructure:"vm_id"`
 
-	Memory  int          `mapstructure:"memory"`
-	Cores   int          `mapstructure:"cores"`
-	Sockets int          `mapstructure:"sockets"`
-	OS      string       `mapstructure:"os"`
-	NICs    []nicConfig  `mapstructure:"network_adapters"`
-	Disks   []diskConfig `mapstructure:"disks"`
-	ISOFile string       `mapstructure:"iso_file"`
-	Agent   bool         `mapstructure:"qemu_agent"`
+	Memory         int          `mapstructure:"memory"`
+	Cores          int          `mapstructure:"cores"`
+	CPUType        string       `mapstructure:"cpu_type"`
+	Sockets        int          `mapstructure:"sockets"`
+	OS             string       `mapstructure:"os"`
+	NICs           []nicConfig  `mapstructure:"network_adapters"`
+	Disks          []diskConfig `mapstructure:"disks"`
+	ISOFile        string       `mapstructure:"iso_file"`
+	Agent          bool         `mapstructure:"qemu_agent"`
+	SCSIController string       `mapstructure:"scsi_controller"`
 
 	TemplateName        string `mapstructure:"template_name"`
 	TemplateDescription string `mapstructure:"template_description"`
@@ -100,17 +103,15 @@ func NewConfig(raws ...interface{}) (*Config, []string, error) {
 	if c.Password == "" {
 		c.Password = os.Getenv("PROXMOX_PASSWORD")
 	}
-	if c.RawBootKeyInterval == "" {
-		c.RawBootKeyInterval = os.Getenv(common.PackerKeyEnv)
-	}
-	if c.RawBootKeyInterval == "" {
-		c.BootKeyInterval = 5 * time.Millisecond
-	} else {
-		if interval, err := time.ParseDuration(c.RawBootKeyInterval); err == nil {
-			c.BootKeyInterval = interval
-		} else {
-			errs = packer.MultiErrorAppend(errs, fmt.Errorf("Could not parse boot_key_interval: %v", err))
+	if c.BootKeyInterval == 0 && os.Getenv(common.PackerKeyEnv) != "" {
+		var err error
+		c.BootKeyInterval, err = time.ParseDuration(os.Getenv(common.PackerKeyEnv))
+		if err != nil {
+			errs = packer.MultiErrorAppend(errs, err)
 		}
+	}
+	if c.BootKeyInterval == 0 {
+		c.BootKeyInterval = 5 * time.Millisecond
 	}
 
 	if c.VMName == "" {
@@ -128,6 +129,10 @@ func NewConfig(raws ...interface{}) (*Config, []string, error) {
 	if c.Sockets < 1 {
 		log.Printf("Number of sockets %d is too small, using default: 1", c.Sockets)
 		c.Sockets = 1
+	}
+	if c.CPUType == "" {
+		log.Printf("CPU type not set, using default 'kvm64'")
+		c.CPUType = "kvm64"
 	}
 	if c.OS == "" {
 		log.Printf("OS not set, using default 'other'")
@@ -159,6 +164,10 @@ func NewConfig(raws ...interface{}) (*Config, []string, error) {
 			errs = packer.MultiErrorAppend(errs, errors.New(fmt.Sprintf("disk format must be specified for pool type %q", c.Disks[idx].StoragePoolType)))
 		}
 	}
+	if c.SCSIController == "" {
+		log.Printf("SCSI controller not set, using default 'lsi'")
+		c.SCSIController = "lsi"
+	}
 
 	errs = packer.MultiErrorAppend(errs, c.Comm.Prepare(&c.ctx)...)
 	errs = packer.MultiErrorAppend(errs, c.BootConfig.Prepare(&c.ctx)...)
@@ -174,7 +183,7 @@ func NewConfig(raws ...interface{}) (*Config, []string, error) {
 	if c.ProxmoxURLRaw == "" {
 		errs = packer.MultiErrorAppend(errs, errors.New("proxmox_url must be specified"))
 	}
-	if c.ProxmoxURL, err = url.Parse(c.ProxmoxURLRaw); err != nil {
+	if c.proxmoxURL, err = url.Parse(c.ProxmoxURLRaw); err != nil {
 		errs = packer.MultiErrorAppend(errs, errors.New(fmt.Sprintf("Could not parse proxmox_url: %s", err)))
 	}
 	if c.ISOFile == "" {
