@@ -93,10 +93,23 @@ func (c *BuildCommand) ParseArgs(args []string) (Config, int) {
 	return cfg, 0
 }
 
+func (c *BuildCommand) GetBuildsFromHCL(path string) ([]packer.Build, int) {
+	panic("to implement")
+	return nil, 0
+}
+
 func (c *BuildCommand) GetBuilds(path string) ([]packer.Build, int) {
+	isHCLLoaded, err := isHCLLoaded(path)
+	if err != nil {
+		c.Ui.Error(fmt.Sprintf("Could not tell wether %s is hcl enabled: %s", path, err))
+		return nil, 1
+	}
+	if isHCLLoaded {
+		return c.GetBuildsFromHCL(path)
+	}
+
 	// Parse the template
 	var tpl *template.Template
-	var err error
 	tpl, err = template.ParseFile(path)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("Failed to parse template: %s", err))
