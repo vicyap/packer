@@ -52,6 +52,7 @@ func (c *BuildCommand) Run(args []string) int {
 	return c.RunContext(buildCtx, args)
 }
 
+// Config is the command-configuration parsed from the command line.
 type Config struct {
 	Color, Debug, Force, Timestamp bool
 	ParallelBuilds                 int64
@@ -92,28 +93,24 @@ func (c *BuildCommand) ParseArgs(args []string) (Config, int) {
 	return cfg, 0
 }
 
-func (c *BuildCommand) RunContext(buildCtx context.Context, args []string) int {
-	cfg, ret := c.ParseArgs(args)
-	if ret != 0 {
-		return ret
-	}
-
+func (c *BuildCommand) GetBuilds(path string) ([]packer.Build, int) {
 	// Parse the template
 	var tpl *template.Template
 	var err error
-	tpl, err = template.ParseFile(cfg.Path)
+	tpl, err = template.ParseFile(path)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("Failed to parse template: %s", err))
-		return 1
+		return nil, 1
 	}
 
 	// Get the core
 	core, err := c.Meta.Core(tpl)
 	if err != nil {
 		c.Ui.Error(err.Error())
-		return 1
+		return nil, 1
 	}
 
+	ret := 0
 	// Get the builds we care about
 	buildNames := c.Meta.BuildNames(core)
 	builds := make([]packer.Build, 0, len(buildNames))
@@ -123,10 +120,24 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, args []string) int {
 			c.Ui.Error(fmt.Sprintf(
 				"Failed to initialize build '%s': %s",
 				n, err))
+			ret = 1
 			continue
 		}
 
 		builds = append(builds, b)
+	}
+	return builds, ret
+}
+
+func (c *BuildCommand) RunContext(buildCtx context.Context, args []string) int {
+	cfg, ret := c.ParseArgs(args)
+	if ret != 0 {
+		return ret
+	}
+
+	builds, ret := c.GetBuilds(cfg.Path)
+	if ret != 0 {
+		return ret
 	}
 
 	if cfg.Debug {
@@ -142,7 +153,7 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, args []string) int {
 		packer.UiColorBlue,
 	}
 	buildUis := make(map[string]packer.Ui)
-	for i, b := range buildNames {
+	for i, b := range builds {
 		var ui packer.Ui
 		ui = c.Ui
 		if cfg.Color {
@@ -152,7 +163,7 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, args []string) int {
 			}
 			if _, ok := c.Ui.(*packer.MachineReadableUi); !ok {
 				ui.Say(fmt.Sprintf("%s output will be in this color.", b))
-				if i+1 == len(buildNames) {
+				if i+1 == len(builds) {
 					// Add a newline between the color output and the actual output
 					c.Ui.Say("")
 				}
@@ -165,7 +176,7 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, args []string) int {
 			}
 		}
 
-		buildUis[b] = ui
+		buildUis[b.Name()] = ui
 	}
 
 	log.Printf("Build debug mode: %v", cfg.Debug)
