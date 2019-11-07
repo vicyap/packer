@@ -13,6 +13,9 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl2/hclparse"
+	"github.com/hashicorp/packer/hcl2template"
 	"github.com/hashicorp/packer/helper/enumflag"
 	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/template"
@@ -94,7 +97,29 @@ func (c *BuildCommand) ParseArgs(args []string) (Config, int) {
 }
 
 func (c *BuildCommand) GetBuildsFromHCL(path string) ([]packer.Build, int) {
-	panic("to implement")
+	parser := &hcl2template.Parser{
+		Parser: hclparse.NewParser(),
+	}
+	cfg, diags := parser.Parse(path)
+	{ // show any diagnostic and err if need be.
+		b := bytes.NewBuffer(nil)
+		err := hcl.NewDiagnosticTextWriter(b, parser.Files(), 80, false).WriteDiagnostics(diags)
+		if err != nil {
+			c.Ui.Error("could not write diagnostic: " + err.Error())
+			return nil, 1
+		}
+		if b.Len() != 0 {
+			c.Ui.Message(b.String())
+		}
+		if diags.HasErrors() {
+			return nil, 1
+		}
+	}
+
+	for _, build := range cfg.Builds {
+		coreBuil
+	}
+
 	return nil, 0
 }
 
