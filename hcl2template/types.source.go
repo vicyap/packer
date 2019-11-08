@@ -19,7 +19,7 @@ type Source struct {
 	HCL2Ref HCL2Ref
 }
 
-func (p *Parser) decodeSource(block *hcl.Block, sourceSpecs map[string]Decodable) (*Source, hcl.Diagnostics) {
+func (p *Parser) decodeSource(block *hcl.Block, sourceSpecs pluginLoader) (*Source, hcl.Diagnostics) {
 	source := &Source{
 		Type: block.Labels[0],
 		Name: block.Labels[1],
@@ -28,10 +28,11 @@ func (p *Parser) decodeSource(block *hcl.Block, sourceSpecs map[string]Decodable
 
 	var diags hcl.Diagnostics
 
-	sourceSpec, found := sourceSpecs[source.Type]
-	if !found {
+	sourceSpec, err := sourceSpecs(source.Type)
+	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
-			Summary: "Unknown " + sourceLabel + " type",
+			Summary: "Failed to load " + sourceLabel + " type",
+			Detail:  err.Error(),
 			Subject: &block.LabelRanges[0],
 		})
 		return source, diags

@@ -1,6 +1,7 @@
 package hcl2template
 
 import (
+	"fmt"
 	"testing"
 
 	awscommon "github.com/hashicorp/packer/builder/amazon/common"
@@ -37,11 +38,22 @@ func getBasicParser() *Parser {
 			"ssh":   &communicator.SSH{},
 			"winrm": &communicator.WinRM{},
 		},
-		SourceSchemas: map[string]Decodable{
+		SourceSchemas: mapOfDecodable(map[string]Decodable{
 			"amazon-ebs":     &amazonebs.Config{},
 			"virtualbox-iso": &iso.Config{},
-		},
+		}).Get,
 	}
+}
+
+type mapOfDecodable map[string]Decodable
+
+func (mod mapOfDecodable) Get(decodable string) (Decodable, error) {
+	d, found := mod[decodable]
+	var err error
+	if !found {
+		err = fmt.Errorf("Unknown entry %s", decodable)
+	}
+	return d, err
 }
 
 func TestParser_ParseFile(t *testing.T) {

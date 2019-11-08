@@ -35,8 +35,10 @@ type Parser struct {
 
 	CommunicatorSchemas map[string]Decodable
 
-	SourceSchemas map[string]Decodable
+	SourceSchemas pluginLoader
 }
+
+type pluginLoader func(name string) (Decodable, error)
 
 const hcl2FileExt = ".pkr.hcl"
 
