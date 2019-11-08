@@ -14,7 +14,7 @@ import (
 	"syscall"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl2/hclparse"
+	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/packer/hcl2template"
 	"github.com/hashicorp/packer/helper/enumflag"
 	"github.com/hashicorp/packer/packer"
@@ -117,7 +117,8 @@ func (c *BuildCommand) GetBuildsFromHCL(path string) ([]packer.Build, int) {
 	}
 
 	for _, build := range cfg.Builds {
-		coreBuil
+		_ = packer.CoreBuild{}
+		_ = build
 	}
 
 	return nil, 0
