@@ -112,9 +112,9 @@ func (c *Core) BuildNames() []string {
 	return r
 }
 
-func (c *Core) generateCoreBuildProvisioner(rawP *template.Provisioner, rawName string) (coreBuildProvisioner, error) {
+func (c *Core) generateCoreBuildProvisioner(rawP *template.Provisioner, rawName string) (CoreBuildProvisioner, error) {
 	// Get the provisioner
-	cbp := coreBuildProvisioner{}
+	cbp := CoreBuildProvisioner{}
 	provisioner, err := c.components.Provisioner(rawP.Type)
 	if err != nil {
 		return cbp, fmt.Errorf(
@@ -146,7 +146,7 @@ func (c *Core) generateCoreBuildProvisioner(rawP *template.Provisioner, rawName 
 			Provisioner: provisioner,
 		}
 	}
-	cbp = coreBuildProvisioner{
+	cbp = CoreBuildProvisioner{
 		pType:       rawP.Type,
 		provisioner: provisioner,
 		config:      config,
@@ -177,7 +177,7 @@ func (c *Core) Build(n string) (Build, error) {
 	rawName := configBuilder.Name
 
 	// Setup the provisioners for this build
-	provisioners := make([]coreBuildProvisioner, 0, len(c.Template.Provisioners))
+	provisioners := make([]CoreBuildProvisioner, 0, len(c.Template.Provisioners))
 	for _, rawP := range c.Template.Provisioners {
 		// If we're skipping this, then ignore it
 		if rawP.OnlyExcept.Skip(rawName) {
@@ -191,7 +191,7 @@ func (c *Core) Build(n string) (Build, error) {
 		provisioners = append(provisioners, cbp)
 	}
 
-	var cleanupProvisioner coreBuildProvisioner
+	var cleanupProvisioner CoreBuildProvisioner
 	if c.Template.CleanupProvisioner != nil {
 		// This is a special instantiation of the shell-local provisioner that
 		// is only run on error at end of provisioning step before other step
@@ -203,9 +203,9 @@ func (c *Core) Build(n string) (Build, error) {
 	}
 
 	// Setup the post-processors
-	postProcessors := make([][]coreBuildPostProcessor, 0, len(c.Template.PostProcessors))
+	postProcessors := make([][]CoreBuildPostProcessor, 0, len(c.Template.PostProcessors))
 	for _, rawPs := range c.Template.PostProcessors {
-		current := make([]coreBuildPostProcessor, 0, len(rawPs))
+		current := make([]CoreBuildPostProcessor, 0, len(rawPs))
 		for _, rawP := range rawPs {
 			if rawP.Skip(rawName) {
 				continue
@@ -233,7 +233,7 @@ func (c *Core) Build(n string) (Build, error) {
 					"post-processor type not found: %s", rawP.Type)
 			}
 
-			current = append(current, coreBuildPostProcessor{
+			current = append(current, CoreBuildPostProcessor{
 				processor:         postProcessor,
 				processorType:     rawP.Type,
 				config:            rawP.Config,
@@ -251,7 +251,7 @@ func (c *Core) Build(n string) (Build, error) {
 
 	// TODO hooks one day
 
-	return &coreBuild{
+	return &CoreBuild{
 		name:               n,
 		builder:            builder,
 		builderConfig:      configBuilder.Config,

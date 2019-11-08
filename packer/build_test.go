@@ -10,8 +10,8 @@ func boolPointer(tf bool) *bool {
 	return &tf
 }
 
-func testBuild() *coreBuild {
-	return &coreBuild{
+func testBuild() *CoreBuild {
+	return &CoreBuild{
 		name:          "test",
 		builder:       &MockBuilder{ArtifactId: "b"},
 		builderConfig: 42,
@@ -19,10 +19,10 @@ func testBuild() *coreBuild {
 		hooks: map[string][]Hook{
 			"foo": {&MockHook{}},
 		},
-		provisioners: []coreBuildProvisioner{
+		provisioners: []CoreBuildProvisioner{
 			{"mock-provisioner", &MockProvisioner{}, []interface{}{42}},
 		},
-		postProcessors: [][]coreBuildPostProcessor{
+		postProcessors: [][]CoreBuildPostProcessor{
 			{
 				{&MockPostProcessor{ArtifactId: "pp"}, "testPP", make(map[string]interface{}), boolPointer(true)},
 			},
@@ -228,7 +228,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	// Test case: Test that with no post-processors, we only get the
 	// main build.
 	build := testBuild()
-	build.postProcessors = [][]coreBuildPostProcessor{}
+	build.postProcessors = [][]CoreBuildPostProcessor{}
 
 	build.Prepare()
 	artifacts, err := build.Run(context.Background(), ui)
@@ -249,7 +249,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	// Test case: Test that with a single post-processor that doesn't keep
 	// inputs, only that post-processors results are returned.
 	build = testBuild()
-	build.postProcessors = [][]coreBuildPostProcessor{
+	build.postProcessors = [][]CoreBuildPostProcessor{
 		{
 			{&MockPostProcessor{ArtifactId: "pp"}, "pp", make(map[string]interface{}), boolPointer(false)},
 		},
@@ -274,7 +274,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	// Test case: Test that with multiple post-processors, as long as one
 	// keeps the original, the original is kept.
 	build = testBuild()
-	build.postProcessors = [][]coreBuildPostProcessor{
+	build.postProcessors = [][]CoreBuildPostProcessor{
 		{
 			{&MockPostProcessor{ArtifactId: "pp1"}, "pp", make(map[string]interface{}), boolPointer(false)},
 		},
@@ -302,7 +302,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	// Test case: Test that with sequences, intermediaries are kept if they
 	// want to be.
 	build = testBuild()
-	build.postProcessors = [][]coreBuildPostProcessor{
+	build.postProcessors = [][]CoreBuildPostProcessor{
 		{
 			{&MockPostProcessor{ArtifactId: "pp1a"}, "pp", make(map[string]interface{}), boolPointer(false)},
 			{&MockPostProcessor{ArtifactId: "pp1b"}, "pp", make(map[string]interface{}), boolPointer(true)},
@@ -332,7 +332,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	// Test case: Test that with a single post-processor that forcibly
 	// keeps inputs, that the artifacts are kept.
 	build = testBuild()
-	build.postProcessors = [][]coreBuildPostProcessor{
+	build.postProcessors = [][]CoreBuildPostProcessor{
 		{
 			{
 				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: true}, "pp", make(map[string]interface{}), boolPointer(false),
@@ -360,7 +360,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	// Test case: Test that with a single post-processor that non-forcibly
 	// keeps inputs, that the artifacts are discarded if user overrides.
 	build = testBuild()
-	build.postProcessors = [][]coreBuildPostProcessor{
+	build.postProcessors = [][]CoreBuildPostProcessor{
 		{
 			{
 				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: false}, "pp", make(map[string]interface{}), boolPointer(false),
@@ -387,7 +387,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	// Test case: Test that with a single post-processor that non-forcibly
 	// keeps inputs, that the artifacts are kept if user does not have preference.
 	build = testBuild()
-	build.postProcessors = [][]coreBuildPostProcessor{
+	build.postProcessors = [][]CoreBuildPostProcessor{
 		{
 			{
 				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: false}, "pp", make(map[string]interface{}), nil,

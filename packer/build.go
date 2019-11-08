@@ -79,19 +79,19 @@ type Build interface {
 	SetOnError(string)
 }
 
-// A build struct represents a single build job, the result of which should
+// A CoreBuild struct represents a single build job, the result of which should
 // be a single machine image artifact. This artifact may be comprised of
-// multiple files, of course, but it should be for only a single provider
-// (such as VirtualBox, EC2, etc.).
-type coreBuild struct {
+// multiple files, of course, but it should be for only a single provider (such
+// as VirtualBox, EC2, etc.).
+type CoreBuild struct {
 	name               string
 	builder            Builder
 	builderConfig      interface{}
 	builderType        string
 	hooks              map[string][]Hook
-	postProcessors     [][]coreBuildPostProcessor
-	provisioners       []coreBuildProvisioner
-	cleanupProvisioner coreBuildProvisioner
+	postProcessors     [][]CoreBuildPostProcessor
+	provisioners       []CoreBuildProvisioner
+	cleanupProvisioner CoreBuildProvisioner
 	templatePath       string
 	variables          map[string]string
 
@@ -102,32 +102,32 @@ type coreBuild struct {
 	prepareCalled bool
 }
 
-// Keeps track of the post-processor and the configuration of the
-// post-processor used within a build.
-type coreBuildPostProcessor struct {
+// CoreBuildPostProcessor Keeps track of the post-processor and the
+// configuration of the post-processor used within a build.
+type CoreBuildPostProcessor struct {
 	processor         PostProcessor
 	processorType     string
 	config            map[string]interface{}
 	keepInputArtifact *bool
 }
 
-// Keeps track of the provisioner and the configuration of the provisioner
-// within the build.
-type coreBuildProvisioner struct {
+// CoreBuildProvisioner keeps track of the provisioner and the configuration of
+// the provisioner within the build.
+type CoreBuildProvisioner struct {
 	pType       string
 	provisioner Provisioner
 	config      []interface{}
 }
 
 // Returns the name of the build.
-func (b *coreBuild) Name() string {
+func (b *CoreBuild) Name() string {
 	return b.name
 }
 
 // Prepare prepares the build by doing some initialization for the builder
 // and any hooks. This _must_ be called prior to Run. The parameter is the
 // overrides for the variables within the template (if any).
-func (b *coreBuild) Prepare() (warn []string, err error) {
+func (b *CoreBuild) Prepare() (warn []string, err error) {
 	b.l.Lock()
 	defer b.l.Unlock()
 
@@ -190,7 +190,7 @@ func (b *coreBuild) Prepare() (warn []string, err error) {
 }
 
 // Runs the actual build. Prepare must be called prior to running this.
-func (b *coreBuild) Run(ctx context.Context, originalUi Ui) ([]Artifact, error) {
+func (b *CoreBuild) Run(ctx context.Context, originalUi Ui) ([]Artifact, error) {
 	if !b.prepareCalled {
 		panic("Prepare must be called first")
 	}
@@ -365,7 +365,7 @@ PostProcessorRunSeqLoop:
 	return artifacts, err
 }
 
-func (b *coreBuild) SetDebug(val bool) {
+func (b *CoreBuild) SetDebug(val bool) {
 	if b.prepareCalled {
 		panic("prepare has already been called")
 	}
@@ -373,7 +373,7 @@ func (b *coreBuild) SetDebug(val bool) {
 	b.debug = val
 }
 
-func (b *coreBuild) SetForce(val bool) {
+func (b *CoreBuild) SetForce(val bool) {
 	if b.prepareCalled {
 		panic("prepare has already been called")
 	}
@@ -381,7 +381,7 @@ func (b *coreBuild) SetForce(val bool) {
 	b.force = val
 }
 
-func (b *coreBuild) SetOnError(val string) {
+func (b *CoreBuild) SetOnError(val string) {
 	if b.prepareCalled {
 		panic("prepare has already been called")
 	}
