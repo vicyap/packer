@@ -98,7 +98,8 @@ func (c *BuildCommand) ParseArgs(args []string) (Config, int) {
 
 func (c *BuildCommand) GetBuildsFromHCL(path string) ([]packer.Build, int) {
 	parser := &hcl2template.Parser{
-		Parser: hclparse.NewParser(),
+		Parser:        hclparse.NewParser(),
+		SourceSchemas: c.CoreConfig.Components.Builder,
 	}
 	cfg, diags := parser.Parse(path)
 	{ // show any diagnostic and err if need be.
