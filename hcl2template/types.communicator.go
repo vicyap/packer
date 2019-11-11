@@ -34,14 +34,13 @@ func (p *Parser) decodeCommunicatorConfig(block *hcl.Block) (*Communicator, hcl.
 
 	diags := hcl.Diagnostics{}
 
-	communicator, found := p.CommunicatorSchemas[output.Type]
-	if !found {
+	communicator, err := p.CommunicatorSchemas(output.Type)
+	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  "Unknown " + communicatorLabel + " type " + output.Type,
-			Detail: "A " + communicatorLabel + " type must start with a letter and " +
-				"may contain only letters, digits, underscores, and dashes.",
-			Subject: &block.DefRange,
+			Summary:  "Error loading " + communicatorLabel + " type " + output.Type,
+			Detail:   err.Error(),
+			Subject:  &block.DefRange,
 		})
 		return output, diags
 	}

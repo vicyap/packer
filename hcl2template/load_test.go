@@ -34,10 +34,10 @@ func getBasicParser() *Parser {
 		PostProvisionersSchemas: map[string]Decodable{
 			"amazon-import": &amazon_import.Config{},
 		},
-		CommunicatorSchemas: map[string]Decodable{
+		CommunicatorSchemas: mapOfDecodable(map[string]Decodable{
 			"ssh":   &communicator.SSH{},
 			"winrm": &communicator.WinRM{},
-		},
+		}).Get,
 		SourceSchemas: mapOfDecodable(map[string]Decodable{
 			"amazon-ebs":     &amazonebs.Config{},
 			"virtualbox-iso": &iso.Config{},

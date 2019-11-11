@@ -33,9 +33,9 @@ type Parser struct {
 
 	PostProvisionersSchemas map[string]Decodable
 
-	CommunicatorSchemas map[string]Decodable
-
 	SourceSchemas pluginLoader
+
+	CommunicatorSchemas pluginLoader
 }
 
 type pluginLoader func(name string) (Decodable, error)
