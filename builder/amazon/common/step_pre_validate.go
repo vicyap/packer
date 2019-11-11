@@ -21,8 +21,6 @@ type StepPreValidate struct {
 	DestAmiName        string
 	ForceDeregister    bool
 	AMISkipBuildRegion bool
-	VpcId              string
-	SubnetId           string
 }
 
 func (s *StepPreValidate) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
@@ -79,15 +77,9 @@ func (s *StepPreValidate) Run(ctx context.Context, state multistep.StateBag) mul
 		ui.Say("Force Deregister flag found, skipping prevalidating AMI Name")
 		return multistep.ActionContinue
 	}
-
 	if s.AMISkipBuildRegion {
 		ui.Say("skip_build_region was set; not prevalidating AMI name")
 		return multistep.ActionContinue
-	}
-
-	if s.VpcId != "" && s.SubnetId == "" {
-		state.Put("error", fmt.Errorf("Error: vpc_id '%s' specified without a valid subnet_id", s.VpcId))
-		return multistep.ActionHalt
 	}
 
 	ec2conn := state.Get("ec2").(*ec2.EC2)
@@ -100,13 +92,13 @@ func (s *StepPreValidate) Run(ctx context.Context, state multistep.StateBag) mul
 		}}})
 	req.RetryCount = 11
 
-	if err := req.Send(); err != nil {
-		err = fmt.Errorf("Error querying AMI: %s", err)
+	err := req.Send()
+	if err != nil {
+		err := fmt.Errorf("Error querying AMI: %s", err)
 		state.Put("error", err)
 		ui.Error(err.Error())
 		return multistep.ActionHalt
 	}
-
 	if len(resp.Images) > 0 {
 		err := fmt.Errorf("Error: AMI Name: '%s' is used by an existing AMI: %s", *resp.Images[0].Name, *resp.Images[0].ImageId)
 		state.Put("error", err)
