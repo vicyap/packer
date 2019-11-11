@@ -455,6 +455,10 @@ func (c *RunConfig) Prepare(ctx *interpolate.Context) []error {
 		}
 	}
 
+	if c.VpcId != "" && c.SubnetId == "" {
+		errs = append(errs, fmt.Errorf("subnet_id must be provided when using vpc_id"))
+	}
+
 	if c.SecurityGroupId != "" {
 		if len(c.SecurityGroupIds) > 0 {
 			errs = append(errs, fmt.Errorf("Only one of security_group_id or security_group_ids can be specified."))

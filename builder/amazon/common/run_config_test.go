@@ -226,3 +226,20 @@ func TestRunConfigPrepare_TemporaryKeyPairName(t *testing.T) {
 		t.Fatal("keypair name does not match")
 	}
 }
+
+func TestRunConfigPrepare_VpcId(t *testing.T) {
+	c := testConfig()
+	if err := c.Prepare(nil); len(err) != 0 {
+		t.Fatalf("err: %s", err)
+	}
+
+	c.VpcId = "vpc-123456abc"
+	if err := c.Prepare(nil); len(err) != 1 {
+		t.Fatalf("Should error if vpc_id is provided with no accompanying subnet_id")
+	}
+
+	c.SubnetId = "subnet-123456abc"
+	if err := c.Prepare(nil); len(err) != 0 {
+		t.Fatalf("err: %s", err)
+	}
+}
