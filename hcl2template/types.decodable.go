@@ -10,32 +10,23 @@ import (
 )
 
 type Decodable interface {
-	FlatMapstructure() interface{}
-}
-
-type SelfSpecified interface {
 	HCL2Spec() map[string]hcldec.Spec
 }
 
-func decodeDecodable(block *hcl.Block, ctx *hcl.EvalContext, dec Decodable) (interface{}, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
+func decodeHCL2Spec(block *hcl.Block, ctx *hcl.EvalContext, dec Decodable) (cty.Value, hcl.Diagnostics) {
+	spec := dec.HCL2Spec()
+	return hcldec.Decode(block.Body, hcldec.ObjectSpec(spec), ctx)
+}
 
-	flatCfg := dec.FlatMapstructure()
-	var spec hcldec.ObjectSpec
-	if ss, selfSpecified := flatCfg.(SelfSpecified); selfSpecified {
-		spec = hcldec.ObjectSpec(ss.HCL2Spec())
-	} else {
-		diags = append(diags, &hcl.Diagnostic{
-			Summary: "Unknown type",
-			Subject: &block.DefRange,
-			Detail:  fmt.Sprintf("Cannot get spec from a %T", flatCfg),
-		})
-		return nil, diags
-	}
-	val, moreDiags := hcldec.Decode(block.Body, spec, ctx)
-	diags = append(diags, moreDiags...)
+type SelfFlattened interface {
+	FlatMapstructure() interface{}
+}
 
-	err := gocty.FromCtyValue(val, flatCfg)
+func unmarshalCty(block *hcl.Block, val cty.Value, dst SelfFlattened) hcl.Diagnostics {
+	v := dst.FlatMapstructure()
+	err := gocty.FromCtyValue(val, v)
+
+	diags := hcl.Diagnostics{}
 	if err != nil {
 		switch err := err.(type) {
 		case cty.PathError:
@@ -52,5 +43,5 @@ func decodeDecodable(block *hcl.Block, ctx *hcl.EvalContext, dec Decodable) (int
 			})
 		}
 	}
-	return flatCfg, diags
+	return diags
 }

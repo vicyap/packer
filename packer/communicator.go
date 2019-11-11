@@ -50,6 +50,13 @@ type RemoteCmd struct {
 // Communicators must be safe for concurrency, meaning multiple calls to
 // Start or any other method may be called at the same time.
 type Communicator interface {
+	HCL2Speccer
+
+	// FlatMapstructure returns a struct containing a communicator that is
+	// flattenned based on its mapstructure tags. Since internally
+	// communicatore are simple structs this allows for simplicity.
+	FlatMapstructure() interface{}
+
 	// Start takes a RemoteCmd and starts it. The RemoteCmd must not be
 	// modified after being used with Start, and it must not be used with
 	// Start again. The Start method returns immediately once the command

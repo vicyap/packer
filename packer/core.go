@@ -43,6 +43,9 @@ type CoreConfig struct {
 }
 
 // The function type used to lookup Builder implementations.
+type CommunicatorFunc func(name string) (Communicator, error)
+
+// The function type used to lookup Builder implementations.
 type BuilderFunc func(name string) (Builder, error)
 
 // The function type used to lookup Hook implementations.

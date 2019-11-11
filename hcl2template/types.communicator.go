@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/packer/packer"
 )
 
 type Communicator struct {
@@ -13,7 +14,7 @@ type Communicator struct {
 	// Given name
 	Name string
 
-	Cfg interface{}
+	Communicator packer.Communicator
 
 	HCL2Ref HCL2Ref
 }
@@ -34,7 +35,7 @@ func (p *Parser) decodeCommunicatorConfig(block *hcl.Block) (*Communicator, hcl.
 
 	diags := hcl.Diagnostics{}
 
-	communicator, err := p.CommunicatorSchemas.Get(output.Type)
+	communicator, err := p.CommunicatorSchemas(output.Type)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -45,9 +46,10 @@ func (p *Parser) decodeCommunicatorConfig(block *hcl.Block) (*Communicator, hcl.
 		return output, diags
 	}
 
-	flatCommunicator, moreDiags := decodeDecodable(block, nil, communicator)
+	decoded, moreDiags := decodeHCL2Spec(block, nil, communicator)
 	diags = append(diags, moreDiags...)
-	output.Cfg = flatCommunicator
+
+	communicator.FlatMapstructure()
 
 	if !hclsyntax.ValidIdentifier(output.Name) {
 		diags = append(diags, &hcl.Diagnostic{

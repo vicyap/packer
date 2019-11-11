@@ -55,7 +55,7 @@ func (p *Parser) decodeProvisionerGroup(block *hcl.Block, provisionerSpecs plugi
 			})
 			continue
 		}
-		flatProvisinerCfg, moreDiags := decodeDecodable(block, nil, provisioner)
+		flatProvisinerCfg, moreDiags := decodeHCL2Spec(block, nil, provisioner)
 		diags = append(diags, moreDiags...)
 		pg.Provisioners = append(pg.Provisioners, Provisioner{flatProvisinerCfg})
 	}

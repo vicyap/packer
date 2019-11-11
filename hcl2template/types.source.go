@@ -19,7 +19,7 @@ type Source struct {
 	HCL2Ref HCL2Ref
 }
 
-func (p *Parser) decodeSource(block *hcl.Block, sourceSpecs pluginLoader) (*Source, hcl.Diagnostics) {
+func (p *Parser) decodeSource(block *hcl.Block) (*Source, hcl.Diagnostics) {
 	source := &Source{
 		Type: block.Labels[0],
 		Name: block.Labels[1],
@@ -28,7 +28,7 @@ func (p *Parser) decodeSource(block *hcl.Block, sourceSpecs pluginLoader) (*Sour
 
 	var diags hcl.Diagnostics
 
-	sourceSpec, err := sourceSpecs.Get(source.Type)
+	sourceSpec, err := p.SourceSchemas(source.Type)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Summary: "Failed to load " + sourceLabel + " type",
@@ -38,9 +38,23 @@ func (p *Parser) decodeSource(block *hcl.Block, sourceSpecs pluginLoader) (*Sour
 		return source, diags
 	}
 
-	flatSource, moreDiags := decodeDecodable(block, nil, sourceSpec)
+	decoded, moreDiags := decodeHCL2Spec(block, nil, sourceSpec)
 	diags = append(diags, moreDiags...)
-	source.Cfg = flatSource
+	warnings, err := sourceSpec.Prepare(decoded)
+	for _, warning := range warnings {
+		diags = append(diags, &hcl.Diagnostic{
+			Summary:  warning,
+			Subject:  &block.DefRange,
+			Severity: hcl.DiagWarning,
+		})
+	}
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Summary:  err.Error(),
+			Subject:  &block.DefRange,
+			Severity: hcl.DiagError,
+		})
+	}
 
 	return source, diags
 }

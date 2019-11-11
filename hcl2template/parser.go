@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/packer/packer"
 )
 
 const (
@@ -29,9 +30,8 @@ var configSchema = &hcl.BodySchema{
 type Parser struct {
 	*hclparse.Parser
 
-	SourceSchemas pluginLoader
-
-	CommunicatorSchemas pluginLoader
+	SourceSchemas       packer.BuilderFunc
+	CommunicatorSchemas packer.CommunicatorFunc
 
 	ProvisionersSchemas pluginLoader
 
