@@ -34,7 +34,7 @@ func (p *Parser) decodeCommunicatorConfig(block *hcl.Block) (*Communicator, hcl.
 
 	diags := hcl.Diagnostics{}
 
-	communicator, err := p.CommunicatorSchemas(output.Type)
+	communicator, err := p.CommunicatorSchemas.Get(output.Type)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

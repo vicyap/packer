@@ -29,16 +29,19 @@ var configSchema = &hcl.BodySchema{
 type Parser struct {
 	*hclparse.Parser
 
-	ProvisionersSchemas map[string]Decodable
-
-	PostProvisionersSchemas map[string]Decodable
-
 	SourceSchemas pluginLoader
 
 	CommunicatorSchemas pluginLoader
+
+	ProvisionersSchemas pluginLoader
+
+	PostProvisionersSchemas pluginLoader
 }
 
-type pluginLoader func(name string) (Decodable, error)
+type pluginLoader interface {
+	Get(name string) (Decodable, error)
+	List() (names []string)
+}
 
 const hcl2FileExt = ".pkr.hcl"
 

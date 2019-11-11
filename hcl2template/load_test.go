@@ -27,21 +27,21 @@ import (
 func getBasicParser() *Parser {
 	return &Parser{
 		Parser: hclparse.NewParser(),
-		ProvisionersSchemas: map[string]Decodable{
+		ProvisionersSchemas: mapOfDecodable(map[string]Decodable{
 			"shell": &shell.Config{},
 			"file":  &file.Config{},
-		},
-		PostProvisionersSchemas: map[string]Decodable{
+		}),
+		PostProvisionersSchemas: mapOfDecodable(map[string]Decodable{
 			"amazon-import": &amazon_import.Config{},
-		},
+		}),
 		CommunicatorSchemas: mapOfDecodable(map[string]Decodable{
 			"ssh":   &communicator.SSH{},
 			"winrm": &communicator.WinRM{},
-		}).Get,
+		}),
 		SourceSchemas: mapOfDecodable(map[string]Decodable{
 			"amazon-ebs":     &amazonebs.Config{},
 			"virtualbox-iso": &iso.Config{},
-		}).Get,
+		}),
 	}
 }
 
@@ -54,6 +54,14 @@ func (mod mapOfDecodable) Get(decodable string) (Decodable, error) {
 		err = fmt.Errorf("Unknown entry %s", decodable)
 	}
 	return d, err
+}
+
+func (mod mapOfDecodable) List() []string {
+	res := []string{}
+	for k := range mod {
+		res = append(res, k)
+	}
+	return res
 }
 
 func TestParser_ParseFile(t *testing.T) {

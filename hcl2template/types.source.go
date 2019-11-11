@@ -28,7 +28,7 @@ func (p *Parser) decodeSource(block *hcl.Block, sourceSpecs pluginLoader) (*Sour
 
 	var diags hcl.Diagnostics
 
-	sourceSpec, err := sourceSpecs(source.Type)
+	sourceSpec, err := sourceSpecs.Get(source.Type)
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Summary: "Failed to load " + sourceLabel + " type",

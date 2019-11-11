@@ -22,7 +22,7 @@ type ProvisionerGroup struct {
 // provisioners
 type ProvisionerGroups []*ProvisionerGroup
 
-func (p *Parser) decodeProvisionerGroup(block *hcl.Block, provisionerSpecs map[string]Decodable) (*ProvisionerGroup, hcl.Diagnostics) {
+func (p *Parser) decodeProvisionerGroup(block *hcl.Block, provisionerSpecs pluginLoader) (*ProvisionerGroup, hcl.Diagnostics) {
 	var b struct {
 		Communicator string   `hcl:"communicator,optional"`
 		Remain       hcl.Body `hcl:",remain"`
@@ -37,7 +37,7 @@ func (p *Parser) decodeProvisionerGroup(block *hcl.Block, provisionerSpecs map[s
 	buildSchema := &hcl.BodySchema{
 		Blocks: []hcl.BlockHeaderSchema{},
 	}
-	for k := range provisionerSpecs {
+	for _, k := range provisionerSpecs.List() {
 		buildSchema.Blocks = append(buildSchema.Blocks, hcl.BlockHeaderSchema{
 			Type: k,
 		})
@@ -46,11 +46,12 @@ func (p *Parser) decodeProvisionerGroup(block *hcl.Block, provisionerSpecs map[s
 	content, moreDiags := b.Remain.Content(buildSchema)
 	diags = append(diags, moreDiags...)
 	for _, block := range content.Blocks {
-		provisioner, found := provisionerSpecs[block.Type]
-		if !found {
+		provisioner, err := provisionerSpecs.Get(block.Type)
+		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
-				Summary: "Unknown " + buildProvisionnersLabel + " type",
+				Summary: "Failed loading " + block.Type,
 				Subject: &block.LabelRanges[0],
+				Detail:  err.Error(),
 			})
 			continue
 		}
