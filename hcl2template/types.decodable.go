@@ -1,7 +1,8 @@
 package hcl2template
 
 import (
-	"fmt"
+	"github.com/mitchellh/mapstructure"
+	"encoding/json"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hcldec"
@@ -20,28 +21,25 @@ func decodeHCL2Spec(block *hcl.Block, ctx *hcl.EvalContext, dec Decodable) (cty.
 
 type SelfFlattened interface {
 	FlatMapstructure() interface{}
+	Configure(...interface{}) error
 }
 
-func unmarshalCty(block *hcl.Block, val cty.Value, dst SelfFlattened) hcl.Diagnostics {
-	v := dst.FlatMapstructure()
-	err := gocty.FromCtyValue(val, v)
-
-	diags := hcl.Diagnostics{}
+func unmarshalCty(val cty.Value, dst SelfFlattened) error {
+	flat := dst.FlatMapstructure()
+	err := gocty.FromCtyValue(val, flat)
 	if err != nil {
-		switch err := err.(type) {
-		case cty.PathError:
-			diags = append(diags, &hcl.Diagnostic{
-				Summary: "gocty.FromCtyValue: " + err.Error(),
-				Subject: &block.DefRange,
-				Detail:  fmt.Sprintf("%v", err.Path),
-			})
-		default:
-			diags = append(diags, &hcl.Diagnostic{
-				Summary: "gocty.FromCtyValue: " + err.Error(),
-				Subject: &block.DefRange,
-				Detail:  fmt.Sprintf("%v", err),
-			})
-		}
+		return err
 	}
-	return diags
+
+	// Currently we json encode the "flat structure" to later mapstructure-load
+	// it onto dst.
+	//
+	// May be another solution to this would be to set dst from v by simply
+	// typechecking v and dst.
+	b, err := json.Marshal(flat)
+	if err != nil {
+		return err
+	}
+	mapstructure.Decode
+	dst.Configure(...interface{})
 }
