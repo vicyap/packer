@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+    "regexp"
 
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/common/bootcommand"
@@ -149,7 +150,7 @@ type Config struct {
 	DiskInterface string `mapstructure:"disk_interface" required:"false"`
 	// The size, in megabytes, of the hard disk to create
 	// for the VM. By default, this is 40960 (40 GB).
-	DiskSize uint `mapstructure:"disk_size" required:"false"`
+	DiskSize string `mapstructure:"disk_size" required:"false"`
 	// The cache mode to use for disk. Allowed values include any of
 	// `writethrough`, `writeback`, `none`, `unsafe` or `directsync`. By
 	// default, this is set to `writeback`.
@@ -348,9 +349,12 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, error) {
 
 	errs = packer.MultiErrorAppend(errs, b.config.ShutdownConfig.Prepare(&b.config.ctx)...)
 
-	if b.config.DiskSize == 0 {
-		b.config.DiskSize = 40960
+	if b.config.DiskSize == "" || b.config.DiskSize == "0" {
+		b.config.DiskSize = "40960M"
 	}
+    if match, _ := regexp.MatchString(`^\d+[KkMGTPEb]?$`, b.config.DiskSize); !match {
+        return nil, errors.New("DiskSize value is improper")
+    }
 
 	if b.config.DiskCache == "" {
 		b.config.DiskCache = "writeback"
@@ -701,7 +705,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 		artifact.state["diskPaths"] = diskpaths
 	}
 	artifact.state["diskType"] = b.config.Format
-	artifact.state["diskSize"] = uint64(b.config.DiskSize)
+	artifact.state["diskSize"] = b.config.DiskSize
 	artifact.state["domainType"] = b.config.Accelerator
 
 	return artifact, nil
